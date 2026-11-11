@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CalmKanban — Minimalist Focus</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -72,6 +73,51 @@
     .btn-custom:hover { opacity: 0.9; }
     .btn-accent { background-color: var(--accent); color: #ffffff; }
     body.theme-eink .btn-accent { color: #09090b; font-weight: 600; }
+
+    /* CUSTOM MINIMALIST CHECKBOX AESTHETIC */
+    .custom-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 1.15rem;
+      height: 1.15rem;
+      border: 1.5px solid var(--btn-border);
+      border-radius: 6px;
+      background-color: var(--bg);
+      cursor: pointer;
+      display: inline-grid;
+      place-content: center;
+      transition: all 0.18s ease-in-out;
+      flex-shrink: 0;
+      outline: none;
+      position: relative;
+    }
+    .custom-checkbox:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+    }
+    .custom-checkbox:checked {
+      background-color: var(--accent);
+      border-color: var(--accent);
+    }
+    .custom-checkbox::before {
+      content: "";
+      width: 0.65rem;
+      height: 0.65rem;
+      clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+      transform: scale(0);
+      transform-origin: center;
+      transition: 120ms transform ease-in-out;
+      background-color: #ffffff;
+    }
+    .custom-checkbox:checked::before {
+      transform: scale(1);
+    }
+    body.theme-eink .custom-checkbox:checked::before {
+      background-color: #09090b;
+    }
+    body.theme-paper .custom-checkbox:checked::before {
+      background-color: #ffffff;
+    }
   </style>
 </head>
 <body class="theme-slate bg-main min-h-screen flex flex-col transition-colors duration-200">
@@ -152,10 +198,19 @@
           id="taskTitleInput" 
           type="text" 
           placeholder="Add a single task... (Press Enter)"
-          class="w-full rounded-xl pl-3.5 pr-48 py-2.5 text-sm border outline-none bg-main border-slate-700/80 focus:border-teal-500/80 transition-colors"
+          class="w-full rounded-xl pl-3.5 pr-64 sm:pr-96 py-2.5 text-sm border outline-none bg-main border-slate-700/80 focus:border-teal-500/80 transition-colors"
           required
         />
         <div class="absolute right-1.5 top-1.5 bottom-1.5 flex items-center gap-1">
+          <!-- Optional Deadline input in quick bar -->
+          <div class="hidden sm:flex items-center border rounded-lg px-2 text-xs btn-custom h-full gap-1" title="Optional Deadline">
+            <span class="text-[10px] text-muted-custom">⏳</span>
+            <input 
+              type="date" 
+              id="taskDeadlineInput" 
+              class="bg-transparent outline-none text-xs text-muted-custom cursor-pointer"
+            />
+          </div>
           <select id="taskPrioritySelect" class="rounded-lg px-2 text-xs border btn-custom outline-none h-full">
             <option value="normal">🟡 Normal</option>
             <option value="high">🔴 High</option>
@@ -240,6 +295,86 @@
       <div id="cards-done" class="space-y-3 flex-1 min-h-[80px]"></div>
     </div>
   </main>
+
+  <!-- MODAL: EDIT TASK DETAILS -->
+  <div id="editTaskModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+    <div class="max-w-lg w-full rounded-2xl border bg-surf p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800/60">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          <h3 class="text-sm font-semibold">Edit Task</h3>
+        </div>
+        <button class="closeModalBtn text-muted-custom hover:opacity-100">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="editTaskForm" class="space-y-3.5">
+        <input type="hidden" id="editTaskId" />
+
+        <div>
+          <label class="block text-[11px] uppercase tracking-wider text-muted-custom font-semibold mb-1">Title</label>
+          <input 
+            type="text" 
+            id="editTaskTitle" 
+            class="w-full rounded-xl p-2.5 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80" 
+            required 
+          />
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div>
+            <label class="block text-[11px] uppercase tracking-wider text-muted-custom font-semibold mb-1">Column</label>
+            <select id="editTaskStatus" class="w-full rounded-xl p-2 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80">
+              <option value="todo">To Do</option>
+              <option value="doing">Doing</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] uppercase tracking-wider text-muted-custom font-semibold mb-1">Priority</label>
+            <select id="editTaskPriority" class="w-full rounded-xl p-2 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80">
+              <option value="normal">🟡 Normal</option>
+              <option value="high">🔴 High</option>
+              <option value="low">🟢 Low</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] uppercase tracking-wider text-muted-custom font-semibold mb-1">Created Date</label>
+            <input 
+              type="text" 
+              id="editTaskDate" 
+              placeholder="e.g. 11-11-2026"
+              class="w-full rounded-xl p-2 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80" 
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] uppercase tracking-wider text-muted-custom font-semibold mb-1">Deadline ⏳</label>
+            <input 
+              type="date" 
+              id="editTaskDeadline" 
+              class="w-full rounded-xl p-1.5 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80 text-slate-200" 
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] uppercase tracking-wider text-muted-custom font-semibold mb-1">Notes / Description</label>
+          <textarea 
+            id="editTaskNotes" 
+            rows="3" 
+            placeholder="Add relevant context or links..."
+            class="w-full rounded-xl p-2.5 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-800/60">
+          <button type="button" class="closeModalBtn px-3.5 py-2 rounded-xl text-xs border btn-custom">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-medium btn-accent">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL: SECRET REWARD LOOT BOX UNLOCK -->
   <div id="rewardModal" class="hidden fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4">
@@ -455,6 +590,9 @@
     let secretRewards = JSON.parse(localStorage.getItem(SECRET_REWARDS_KEY) || '[]');
     let winsHistory = JSON.parse(localStorage.getItem(WINS_HISTORY_KEY) || '[]');
 
+    // Persistent set of expanded card subtasks
+    const openSubtasksTaskIds = new Set();
+
     const DEFAULT_TASKS = [
       {
         id: 't-1',
@@ -462,6 +600,7 @@
         status: 'doing',
         priority: 'high',
         date: new Date().toLocaleDateString('es-CL'),
+        deadline: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10),
         notes: '',
         isRemote: false,
         subtasks: [
@@ -582,7 +721,6 @@
         const payload = await response.json();
         let remoteTasks = [];
 
-        // Support both old array payload and new object payload
         if (Array.isArray(payload)) {
           remoteTasks = payload;
         } else if (payload && payload.tasks) {
@@ -601,7 +739,6 @@
             remoteTasks.map(rt => (rt.title || '').trim().toLowerCase())
           );
 
-          // Reconcile deletions
           const initialLength = tasks.length;
           tasks = tasks.filter(t => {
             if (!t.isRemote) return true;
@@ -610,7 +747,6 @@
           });
           removedItems = initialLength - tasks.length;
 
-          // Import remote items
           remoteTasks.forEach(rt => {
             const rawTitle = (rt.title || '').trim();
             if (!rawTitle) return;
@@ -644,6 +780,7 @@
                 status: parsedStatus,
                 priority: (rt.priority || 'normal').toLowerCase(),
                 date: formattedDate,
+                deadline: rt.deadline || '',
                 notes: rt.notes || '',
                 isRemote: true,
                 subtasks: []
@@ -680,9 +817,6 @@
       renderBoard();
     }
 
-    // ------------------------------------------
-    // TOAST HELPER
-    // ------------------------------------------
     let toastTimeout = null;
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -695,9 +829,6 @@
       }, 3000);
     }
 
-    // ------------------------------------------
-    // THEMES
-    // ------------------------------------------
     const themes = ['slate', 'eink', 'paper'];
     let currentTheme = localStorage.getItem(THEME_KEY) || 'slate';
 
@@ -716,9 +847,6 @@
       showToast(`Switched to ${currentTheme.toUpperCase()} mode`);
     });
 
-    // ------------------------------------------
-    // SILENT 20-MIN VISUAL BAR
-    // ------------------------------------------
     let timerRunning = false;
     let timerDurationSec = 20 * 60;
     let timerElapsedSec = 0;
@@ -773,9 +901,6 @@
       showToast('Visual bar reset');
     });
 
-    // ------------------------------------------
-    // MOBILE COLUMN SWITCHER
-    // ------------------------------------------
     document.querySelectorAll('.mobile-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
         const activeMobileCol = tab.getAttribute('data-col');
@@ -797,13 +922,29 @@
     });
 
     function openGoogleCalendar(task) {
-      const now = new Date();
-      now.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0);
-      const end = new Date(now.getTime() + 45 * 60000);
+      let startTime = new Date();
+      if (task.deadline) {
+        const parts = task.deadline.split('-');
+        if (parts.length === 3) {
+          startTime = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 10, 0, 0);
+        }
+      } else {
+        startTime.setMinutes(Math.ceil(startTime.getMinutes() / 15) * 15, 0, 0);
+      }
+
+      const endTime = new Date(startTime.getTime() + 45 * 60000);
       const formatCal = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, '');
-      const datesParam = `${formatCal(now)}/${formatCal(end)}`;
+      const datesParam = `${formatCal(startTime)}/${formatCal(endTime)}`;
       const subtaskList = (task.subtasks || []).map(s => `${s.done ? '[x]' : '[ ]'} ${s.text}`).join('\n');
-      const details = `Calm Focus Session (45m)\n\nPriority: ${task.priority || 'normal'}\nDate: ${task.date || 'Today'}\nNotes: ${task.notes || 'None'}\n\nMicro-Steps:\n${subtaskList}`;
+      const details = `Calm Focus Session (45m)
+
+Priority: ${task.priority || 'normal'}
+Deadline: ${task.deadline || 'None'}
+Date: ${task.date || 'Today'}
+Notes: ${task.notes || 'None'}
+
+Micro-Steps:
+${subtaskList}`;
       const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`[Focus] ${task.title}`)}&details=${encodeURIComponent(details)}&dates=${datesParam}`;
       window.open(url, '_blank');
     }
@@ -812,6 +953,52 @@
       const url = `https://mail.google.com/mail/u/0/#search/${encodeURIComponent(title)}`;
       window.open(url, '_blank');
     }
+
+    // ------------------------------------------
+    // TASK EDIT MODAL HANDLERS
+    // ------------------------------------------
+    const editTaskModal = document.getElementById('editTaskModal');
+    const editTaskId = document.getElementById('editTaskId');
+    const editTaskTitle = document.getElementById('editTaskTitle');
+    const editTaskStatus = document.getElementById('editTaskStatus');
+    const editTaskPriority = document.getElementById('editTaskPriority');
+    const editTaskDate = document.getElementById('editTaskDate');
+    const editTaskDeadline = document.getElementById('editTaskDeadline');
+    const editTaskNotes = document.getElementById('editTaskNotes');
+
+    function openEditModal(task) {
+      editTaskId.value = task.id;
+      editTaskTitle.value = task.title || '';
+      editTaskStatus.value = task.status || 'todo';
+      editTaskPriority.value = (task.priority || 'normal').toLowerCase();
+      editTaskDate.value = task.date || '';
+      editTaskDeadline.value = task.deadline || '';
+      editTaskNotes.value = task.notes || '';
+      editTaskModal.classList.remove('hidden');
+      editTaskTitle.focus();
+    }
+
+    document.getElementById('editTaskForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = editTaskId.value;
+      const target = tasks.find(t => t.id === id);
+      if (target) {
+        const wasDone = target.status === 'done';
+        target.title = editTaskTitle.value.trim();
+        target.status = editTaskStatus.value;
+        target.priority = editTaskPriority.value;
+        target.date = editTaskDate.value.trim();
+        target.deadline = editTaskDeadline.value.trim();
+        target.notes = editTaskNotes.value.trim();
+
+        if (target.status === 'done' && !wasDone) {
+          recordCompletedWin(target.title);
+        }
+        saveTasks();
+        showToast('Task updated successfully');
+      }
+      editTaskModal.classList.add('hidden');
+    });
 
     // ------------------------------------------
     // DOM RENDERING
@@ -867,11 +1054,56 @@
 
       const completedCount = (task.subtasks || []).filter(s => s.done).length;
       const totalCount = (task.subtasks || []).length;
+      const isExpanded = openSubtasksTaskIds.has(task.id);
 
       const priority = (task.priority || 'normal').toLowerCase();
       let badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
       if (priority === 'high') badgeStyle = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
       if (priority === 'low') badgeStyle = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+
+      // DEADLINE BADGE CALCULATION
+      let deadlineHtml = '';
+      if (task.deadline) {
+        const parts = task.deadline.split('-');
+        let isOverdue = false;
+        let isToday = false;
+        let displayDl = task.deadline;
+
+        if (parts.length === 3) {
+          const dDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          if (!isNaN(dDate.getTime())) {
+            displayDl = dDate.toLocaleDateString('es-CL', { month: 'short', day: 'numeric' });
+            if (task.status !== 'done') {
+              if (dDate < today) isOverdue = true;
+              else if (dDate.getTime() === today.getTime()) isToday = true;
+            }
+          }
+        }
+
+        let dlClass = 'border-slate-700/60 bg-slate-800/40 text-muted-custom';
+        let dlIconColor = 'text-muted-custom';
+        let prefix = 'Due: ';
+
+        if (isOverdue) {
+          dlClass = 'border-rose-500/50 bg-rose-500/15 text-rose-300 font-semibold';
+          dlIconColor = 'text-rose-400';
+          prefix = '⚠️ Overdue: ';
+        } else if (isToday) {
+          dlClass = 'border-amber-500/50 bg-amber-500/15 text-amber-300 font-semibold';
+          dlIconColor = 'text-amber-400';
+          prefix = '⏳ Due Today: ';
+        }
+
+        deadlineHtml = `
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-medium border flex items-center gap-1 ${dlClass}" title="Deadline: ${escapeHtml(task.deadline)}">
+            <svg class="w-2.5 h-2.5 ${dlIconColor}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>${prefix}${escapeHtml(displayDl)}</span>
+          </span>
+        `;
+      }
 
       card.innerHTML = `
         <div class="flex items-center justify-between gap-2 mb-2">
@@ -879,6 +1111,7 @@
             <button class="priorityBadgeBtn px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${badgeStyle} cursor-pointer hover:opacity-80" title="Click to cycle priority">
               ${priority}
             </button>
+            ${deadlineHtml}
             ${task.date ? `
               <span class="px-2 py-0.5 rounded-md text-[10px] font-medium border border-sky-500/30 bg-sky-500/10 text-sky-300 flex items-center gap-1">
                 <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -898,13 +1131,13 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
               </button>
             ` : ''}
-            <button class="toggleSubtasksBtn p-1 rounded-md text-muted-custom hover:opacity-100" title="Expand micro-steps">
+            <button class="toggleSubtasksBtn p-1 rounded-md text-muted-custom hover:opacity-100 transition-transform ${isExpanded ? 'rotate-180 text-teal-400' : ''}" title="Expand / collapse micro-steps">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
           </div>
         </div>
 
-        <h3 class="cardTitle text-sm font-medium leading-snug cursor-pointer ${task.status === 'done' ? 'line-through opacity-60' : ''}">
+        <h3 class="cardTitle text-sm font-medium leading-snug cursor-pointer ${task.status === 'done' ? 'line-through opacity-60' : ''}" title="Click to view/add micro-steps">
           ${escapeHtml(task.title)}
         </h3>
 
@@ -917,29 +1150,62 @@
         ${totalCount > 0 ? `
           <div class="mt-2.5 flex items-center gap-2">
             <div class="flex-1 h-1 bg-black/30 rounded-full overflow-hidden">
-              <div class="h-full bg-teal-500 transition-all" style="width: ${(completedCount / totalCount) * 100}%"></div>
+              <div class="h-full bg-teal-500 transition-all duration-300" style="width: ${(completedCount / totalCount) * 100}%"></div>
             </div>
-            <span class="text-[10px] text-muted-custom">${completedCount}/${totalCount}</span>
+            <span class="text-[10px] text-muted-custom font-mono">${completedCount}/${totalCount}</span>
           </div>
         ` : ''}
 
-        <div class="subtasksWrapper hidden mt-3 pt-2.5 border-t border-slate-800/40 space-y-2">
+        <!-- ENHANCED SUBTASKS / MICRO-STEPS UI WITH BESPOKE CHECKBOXES -->
+        <div class="subtasksWrapper ${isExpanded ? '' : 'hidden'} mt-3 pt-3 border-t border-slate-800/60 space-y-2.5">
+          <div class="flex items-center justify-between px-0.5 text-[11px] text-muted-custom">
+            <span class="font-medium tracking-wide">Micro-Steps (10m chunks)</span>
+            <span class="font-mono text-teal-400 font-semibold">${totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}% done</span>
+          </div>
+
           <div class="space-y-1.5 subtaskList">
             ${(task.subtasks || []).map(st => `
-              <div class="flex items-center gap-2 px-1 py-0.5 text-xs ${st.done ? 'opacity-40 line-through' : ''}">
-                <input type="checkbox" class="stCheckbox rounded cursor-pointer" data-task-id="${task.id}" data-st-id="${st.id}" ${st.done ? 'checked' : ''}/>
-                <span class="flex-1">${escapeHtml(st.text)}</span>
+              <div class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl border border-slate-800/70 bg-main/50 hover:border-slate-700 transition-colors text-xs" data-st-id="${st.id}">
+                <input 
+                  type="checkbox" 
+                  class="stCheckbox custom-checkbox" 
+                  data-task-id="${task.id}" 
+                  data-st-id="${st.id}" 
+                  ${st.done ? 'checked' : ''}
+                />
+                <span class="stText flex-1 select-text cursor-pointer leading-tight ${st.done ? 'opacity-40 line-through' : ''}" title="Double-click to edit inline">
+                  ${escapeHtml(st.text)}
+                </span>
+                <button class="editSubtaskBtn opacity-70 sm:opacity-0 group-hover:opacity-100 p-1 text-muted-custom hover:text-amber-300 transition-opacity" title="Edit text">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                </button>
+                <button class="deleteSubtaskBtn opacity-70 sm:opacity-0 group-hover:opacity-100 p-1 text-muted-custom hover:text-red-400 transition-opacity" title="Delete step">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
               </div>
             `).join('')}
           </div>
 
           <form class="addSubtaskForm flex items-center gap-1.5 pt-1">
-            <input type="text" placeholder="+ Add 10m micro-step..." class="flex-1 rounded-lg px-2.5 py-1 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80" required/>
+            <input 
+              type="text" 
+              placeholder="+ Add a 10-minute micro-step..." 
+              class="flex-1 rounded-xl px-2.5 py-1.5 text-xs border outline-none bg-main border-slate-700/80 focus:border-teal-500/80" 
+              required
+            />
+            <button type="submit" class="px-2.5 py-1.5 rounded-xl border text-xs font-medium btn-custom shrink-0">
+              Add
+            </button>
           </form>
         </div>
 
+        <!-- ACTION BUTTONS -->
         <div class="mt-3 pt-2.5 border-t border-slate-800/40 flex items-center justify-between gap-1">
           <div class="flex items-center gap-1">
+            <!-- Edit Button -->
+            <button class="editTaskBtn p-1.5 rounded-lg border text-xs btn-custom text-amber-300 hover:border-amber-500/50" title="Edit task details & deadline">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
             <button class="calBtn p-1.5 rounded-lg border text-xs btn-custom" title="Schedule 45m block in Google Calendar">
               <svg class="w-3 h-3 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </button>
@@ -967,6 +1233,7 @@
         </div>
       `;
 
+      // Cycle priority
       card.querySelector('.priorityBadgeBtn').addEventListener('click', () => {
         const order = ['normal', 'high', 'low'];
         const currentIdx = order.indexOf((task.priority || 'normal').toLowerCase());
@@ -975,16 +1242,25 @@
         showToast(`Priority: ${task.priority.toUpperCase()}`);
       });
 
-      card.querySelector('.cardTitle').addEventListener('click', () => {
-        const wrap = card.querySelector('.subtasksWrapper');
-        wrap.classList.toggle('hidden');
+      // Expand/Collapse subtasks (persists in Set)
+      const toggleSubtasks = () => {
+        if (openSubtasksTaskIds.has(task.id)) {
+          openSubtasksTaskIds.delete(task.id);
+        } else {
+          openSubtasksTaskIds.add(task.id);
+        }
+        renderBoard();
+      };
+
+      card.querySelector('.cardTitle').addEventListener('click', toggleSubtasks);
+      card.querySelector('.toggleSubtasksBtn').addEventListener('click', toggleSubtasks);
+
+      // Edit Task details modal
+      card.querySelector('.editTaskBtn').addEventListener('click', () => {
+        openEditModal(task);
       });
 
-      card.querySelector('.toggleSubtasksBtn').addEventListener('click', () => {
-        const wrap = card.querySelector('.subtasksWrapper');
-        wrap.classList.toggle('hidden');
-      });
-
+      // Promote to anchor
       const promoteBtn = card.querySelector('.promoteBtn');
       if (promoteBtn) {
         promoteBtn.addEventListener('click', () => {
@@ -996,26 +1272,81 @@
         });
       }
 
+      // Checkbox changes: Keep openSubtasksTaskIds so card stays expanded!
       card.querySelectorAll('.stCheckbox').forEach(cb => {
         cb.addEventListener('change', (e) => {
           const stId = e.target.getAttribute('data-st-id');
-          const st = task.subtasks.find(s => s.id === stId);
+          const st = (task.subtasks || []).find(s => s.id === stId);
           if (st) st.done = e.target.checked;
+          openSubtasksTaskIds.add(task.id);
           saveTasks();
         });
       });
 
+      // Inline Edit Subtask
+      card.querySelectorAll('.subtaskList > div').forEach(row => {
+        const stId = row.getAttribute('data-st-id');
+        const st = (task.subtasks || []).find(s => s.id === stId);
+        if (!st) return;
+
+        const textSpan = row.querySelector('.stText');
+        const editBtn = row.querySelector('.editSubtaskBtn');
+        const deleteBtn = row.querySelector('.deleteSubtaskBtn');
+
+        const triggerInlineEdit = () => {
+          const currentText = st.text;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = currentText;
+          input.className = 'flex-1 rounded-lg px-2 py-0.5 text-xs border outline-none bg-main border-teal-500 text-slate-100';
+
+          const saveInline = () => {
+            const val = input.value.trim();
+            if (val) st.text = val;
+            openSubtasksTaskIds.add(task.id);
+            saveTasks();
+          };
+
+          input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              saveInline();
+            } else if (ev.key === 'Escape') {
+              renderBoard();
+            }
+          });
+          input.addEventListener('blur', saveInline);
+
+          textSpan.replaceWith(input);
+          input.focus();
+          input.select();
+        };
+
+        textSpan.addEventListener('dblclick', triggerInlineEdit);
+        editBtn.addEventListener('click', triggerInlineEdit);
+
+        deleteBtn.addEventListener('click', () => {
+          task.subtasks = (task.subtasks || []).filter(s => s.id !== stId);
+          openSubtasksTaskIds.add(task.id);
+          saveTasks();
+          showToast('Micro-step removed');
+        });
+      });
+
+      // Add Subtask form
       const addStForm = card.querySelector('.addSubtaskForm');
       addStForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const input = addStForm.querySelector('input');
-        if (!input.value.trim()) return;
+        const text = input.value.trim();
+        if (!text) return;
         task.subtasks = task.subtasks || [];
         task.subtasks.push({
           id: `st-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-          text: input.value.trim(),
+          text: text,
           done: false
         });
+        openSubtasksTaskIds.add(task.id);
         saveTasks();
       });
 
@@ -1028,6 +1359,7 @@
           deletedKeys.push(normKey);
           localStorage.setItem(DELETED_KEY, JSON.stringify(deletedKeys));
         }
+        openSubtasksTaskIds.delete(task.id);
         tasks = tasks.filter(t => t.id !== task.id);
         saveTasks();
         showToast('Task deleted');
@@ -1074,6 +1406,7 @@
       const titleInput = document.getElementById('taskTitleInput');
       const colSelect = document.getElementById('taskColSelect');
       const prioSelect = document.getElementById('taskPrioritySelect');
+      const deadlineInput = document.getElementById('taskDeadlineInput');
       const title = titleInput.value.trim();
       if (!title) return;
 
@@ -1083,6 +1416,7 @@
         status: colSelect.value,
         priority: prioSelect.value,
         date: new Date().toLocaleDateString('es-CL'),
+        deadline: deadlineInput.value.trim() || '',
         notes: '',
         isRemote: false,
         subtasks: []
@@ -1090,6 +1424,7 @@
 
       tasks.unshift(newTask);
       titleInput.value = '';
+      deadlineInput.value = '';
       saveTasks();
       showToast('Task added to board');
     });
@@ -1131,7 +1466,7 @@
             <span class="text-xs uppercase tracking-wider text-muted-custom font-medium">Micro-Steps (10 min each):</span>
             ${(anchor.subtasks || []).map(st => `
               <div class="p-3 rounded-xl border bg-surf flex items-center gap-3">
-                <input type="checkbox" class="zenStCheckbox rounded" data-st-id="${st.id}" ${st.done ? 'checked' : ''}/>
+                <input type="checkbox" class="zenStCheckbox custom-checkbox" data-st-id="${st.id}" ${st.done ? 'checked' : ''}/>
                 <span class="text-sm ${st.done ? 'line-through opacity-50' : ''}">${escapeHtml(st.text)}</span>
               </div>
             `).join('')}
@@ -1194,6 +1529,7 @@
             status: 'todo',
             priority: 'normal',
             date: new Date().toLocaleDateString('es-CL'),
+            deadline: '',
             notes: '',
             isRemote: false,
             subtasks: []
@@ -1216,19 +1552,20 @@
     });
 
     document.getElementById('downloadCsvBtn').addEventListener('click', () => {
-      const headers = ['Status', 'Priority', 'Date', 'Title', 'Notes', 'Subtasks'];
+      const headers = ['Status', 'Priority', 'Date', 'Deadline', 'Title', 'Notes', 'Subtasks'];
       const escapeCSV = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
 
       const rows = tasks.map(t => [
         t.status.toUpperCase(),
         t.priority || 'normal',
         t.date || '',
+        t.deadline || '',
         t.title,
         t.notes || '',
         (t.subtasks || []).map(s => `${s.done ? '[x]' : '[ ]'} ${s.text}`).join(' | ')
       ]);
 
-      const csvContent = '\uFEFF' + [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\r\n');
+      const csvContent = '﻿' + [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1243,11 +1580,12 @@
     });
 
     document.getElementById('copyTableBtn').addEventListener('click', () => {
-      const headers = ['Status', 'Priority', 'Date', 'Title', 'Notes', 'Subtasks'];
+      const headers = ['Status', 'Priority', 'Date', 'Deadline', 'Title', 'Notes', 'Subtasks'];
       const rows = tasks.map(t => [
         t.status.toUpperCase(),
         t.priority || 'normal',
         t.date || '',
+        t.deadline || '',
         t.title,
         t.notes || '',
         (t.subtasks || []).map(s => `${s.done ? '✓' : '•'} ${s.text}`).join('; ')
@@ -1270,6 +1608,7 @@
         excelModal.classList.add('hidden');
         document.getElementById('syncModal').classList.add('hidden');
         document.getElementById('vaultModal').classList.add('hidden');
+        editTaskModal.classList.add('hidden');
       });
     });
 
